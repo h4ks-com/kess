@@ -14,6 +14,10 @@ pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }.tar.gz"
 bin-dir = "{ bin }{ binary-ext }"
 pkg-fmt = "tgz"
 
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }.zip"
+pkg-fmt = "zip"
+
 [features]
 default = ["sound"]
 sound = ["dep:rodio"]
@@ -24,7 +28,7 @@ fontdue = "0.9"
 getrandom = "0.4"
 hkdf = "0.13"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
-katui = { version = "0.1.0", features = ["app", "game"] }
+katui = { version = "0.2.1", features = ["app", "game"] }
 rodio = { version = "0.23", default-features = false, features = ["playback"], optional = true }
 rumqttc = "0.25"
 serde = { version = "1", features = ["derive"] }

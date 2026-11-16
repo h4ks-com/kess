@@ -23,7 +23,8 @@ address.
 
 ## Install
 
-kess runs on macOS and Linux, on x86_64 and arm64.
+kess runs on macOS and Linux, on x86_64 and arm64, and on Windows on
+x86_64.
 
 <details>
 <summary><b>Homebrew</b> (macOS and Linux)</summary>
@@ -55,12 +56,15 @@ On Linux this needs the packages under [Build](#build) first.
 </details>
 
 Prebuilt binaries are on the
-[releases page](https://github.com/h4ks-com/kess/releases).
+[releases page](https://github.com/h4ks-com/kess/releases). On Windows,
+unzip `kess-x86_64-pc-windows-msvc.zip` and run `kess.exe`.
 
 kess looks like the screenshots in kitty, Ghostty and iTerm2. Terminals with
 sixel graphics, such as WezTerm and foot, show a lower quality picture, and
 the rest, such as Alacritty and Terminal.app, show one made of block
-characters.
+characters. On Windows, a
+[WezTerm nightly](https://wezterm.org/install/windows.html) build shows the
+full picture and Windows Terminal 1.22 or newer shows sixel.
 
 ## Play
 
