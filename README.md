@@ -36,6 +36,16 @@ brew install h4ks-com/tap/kess
 </details>
 
 <details>
+<summary><b>Scoop</b> (Windows)</summary>
+
+```sh
+scoop bucket add h4ks https://github.com/h4ks-com/scoop-bucket
+scoop install h4ks/kess
+```
+
+</details>
+
+<details>
 <summary><b>cargo-binstall</b></summary>
 
 ```sh
