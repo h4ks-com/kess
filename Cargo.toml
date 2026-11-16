@@ -1,7 +1,7 @@
 [package]
 name = "kess"
 description = "Two-player online chess in the terminal, drawn in pixels with katui"
-version = "0.0.1"
+version = "0.1.0"
 edition = "2024"
 rust-version = "1.90"
 license = "GPL-3.0-or-later"
