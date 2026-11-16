@@ -84,27 +84,3 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*.tar.gz
-
-  # crates.io trusts this workflow only after the crate exists and names it a
-  # trusted publisher, so the job waits for the PUBLISH_CRATE variable
-  crate:
-    needs: check
-    if: vars.PUBLISH_CRATE == 'true'
-    runs-on: ubuntu-latest
-    environment:
-      name: crates-io
-      url: https://crates.io/crates/kess
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: dtolnay/rust-toolchain@stable
-      - run: sudo apt-get install --yes --no-install-recommends libasound2-dev
-      - uses: rust-lang/crates-io-auth-action@v1
-        id: crates-io
-      - run: cargo publish --locked
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.crates-io.outputs.token }}

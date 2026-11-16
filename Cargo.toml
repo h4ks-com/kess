@@ -6,10 +6,7 @@ edition = "2024"
 rust-version = "1.90"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/h4ks-com/kess"
-readme = "README.md"
-categories = ["games", "command-line-utilities"]
-keywords = ["chess", "terminal", "kitty-graphics", "multiplayer", "katui"]
-exclude = ["assets/render.py", "docs/screenshots"]
+publish = false
 
 # cargo binstall downloads the archive the release workflow attaches
 [package.metadata.binstall]
