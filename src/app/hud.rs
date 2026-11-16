@@ -401,7 +401,7 @@ fn waiting(kess: &Kess, canvas: &mut Canvas<'_>, sizes: &Sizes) {
         ([1.0, 0.95, 0.85], 1.0),
         (GOLD, 0.5),
     );
-    let command = format!("kess join {code}");
+    let command = format!("kess join {code}   ·   y copy code");
     canvas.text(
         Face::Mono,
         &command,

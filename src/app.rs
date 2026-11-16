@@ -103,6 +103,7 @@ pub struct Kess {
     screen: (f32, f32),
     clocks_shown: String,
     dirty: bool,
+    copy_code: bool,
 }
 
 impl Kess {
@@ -143,6 +144,7 @@ impl Kess {
             screen: (1.0, 1.0),
             clocks_shown: String::new(),
             dirty: true,
+            copy_code: true,
             mode,
         };
         match &kess.mode {
@@ -163,6 +165,17 @@ impl Kess {
         kess.face_home();
         kess.clocks_shown = kess.clock_texts();
         kess
+    }
+
+    /// Whether we host an online game nobody joined yet, with the code on screen.
+    fn hosting_alone(&self) -> bool {
+        matches!(
+            self.mode,
+            Mode::Online {
+                seat: Seat::Host,
+                ..
+            }
+        ) && !self.joined
     }
 
     fn now_ms(&self) -> u64 {
@@ -512,6 +525,14 @@ impl Kess {
                     "sound on"
                 });
             }
+            _ => self.decide(key),
+        }
+    }
+
+    /// The keys that change the course of the game.
+    fn decide(&mut self, key: Key) {
+        match key {
+            Key::Char('y') if self.hosting_alone() => self.copy_code = true,
             Key::Char('r') => self.arm_resign(),
             Key::Char('y') if self.resign_armed > 0.0 => self.resign(),
             Key::Char('d') => self.offer_draw(),
@@ -940,6 +961,13 @@ impl Play for Kess {
 
     fn take_dirty(&mut self) -> bool {
         std::mem::take(&mut self.dirty)
+    }
+
+    fn take_clipboard(&mut self) -> Option<String> {
+        let Mode::Online { code, .. } = &self.mode else {
+            return None;
+        };
+        (self.hosting_alone() && std::mem::take(&mut self.copy_code)).then(|| code.to_string())
     }
 
     fn render(&mut self, light: &mut Light) {

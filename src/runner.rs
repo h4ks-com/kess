@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 
 use katui::game::{Key, Light, P2};
 use katui::present::select::{Backend, select};
+use katui::present::session::copy_to_clipboard;
 use katui::present::surface::{PatchedKitty, PixelScreen};
 use katui::proto::input::{InputEvent, Mods, MouseAction, Pointer};
 use katui::proto::probe::{Capabilities, CellPixels};
@@ -38,6 +39,8 @@ pub trait Play {
     fn busy(&self) -> bool;
     /// Whether something changed since the last frame; reading it clears it.
     fn take_dirty(&mut self) -> bool;
+    /// Text to put on the system clipboard; reading it clears it.
+    fn take_clipboard(&mut self) -> Option<String>;
     fn render(&mut self, light: &mut Light);
     /// Draw text and panels onto the finished frame.
     fn overlay(&mut self, frame: Frame<'_>);
@@ -206,6 +209,9 @@ impl<G: Play> App for Runner<G> {
 
     fn draw(&mut self, out: &mut Vec<u8>, size: CellSize) -> io::Result<Control> {
         self.fit(out, size)?;
+        if let Some(text) = self.game.take_clipboard() {
+            copy_to_clipboard(out, &text, self.caps.multiplexed())?;
+        }
         self.advance();
         let busy = self.game.busy();
         if !(self.fresh || busy || self.game.take_dirty()) {

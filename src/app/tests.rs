@@ -263,6 +263,18 @@ fn wait(host: &mut Kess, guest: &mut Kess, done: impl Fn(&Kess, &Kess) -> bool) 
 }
 
 #[test]
+fn a_host_copies_its_code_once_and_again_on_y() {
+    let code = RoomCode::random().unwrap();
+    let mut host = online(&code, Seat::Host);
+    assert_eq!(host.take_clipboard(), Some(code.to_string()));
+    assert_eq!(host.take_clipboard(), None);
+    type_keys(&mut host, &[Key::Char('y')]);
+    assert_eq!(host.take_clipboard(), Some(code.to_string()));
+    let mut guest = online(&code, Seat::Guest);
+    assert_eq!(guest.take_clipboard(), None);
+}
+
+#[test]
 #[ignore = "needs the internet"]
 fn two_players_meet_and_trade_moves_through_the_brokers() {
     let code = RoomCode::random().unwrap();

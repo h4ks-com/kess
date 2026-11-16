@@ -343,19 +343,23 @@ impl UiApp for Menu {
     }
 
     fn input(&mut self, event: &InputEvent) -> Control {
-        let InputEvent::Key(key, mods) = event else {
-            return Control::Wait;
-        };
+        // we put a pasted code in the code field wherever the focus was
+        if matches!(event, InputEvent::Paste(_)) && self.fields().contains(&Field::Code) {
+            self.focus = Field::Code;
+        }
         if self.focus == Field::Code {
-            match (key, self.code.handle(event)) {
-                (_, Edit::Submitted) => return self.begin(),
-                (_, Edit::Changed | Edit::Moved) => {
+            match self.code.handle(event) {
+                Edit::Submitted => return self.begin(),
+                Edit::Changed | Edit::Moved => {
                     self.problem = None;
                     return Control::Redraw;
                 }
-                _ => {}
+                Edit::Ignored => {}
             }
         }
+        let InputEvent::Key(key, mods) = event else {
+            return Control::Wait;
+        };
         let typing = self.focus == Field::Code;
         match intent(*key, mods.shift, typing) {
             Some(Intent::Quit) => return Control::Quit,
@@ -442,6 +446,21 @@ mod tests {
             press(&mut menu, &[Key::Char(letter.to_ascii_lowercase())]);
         }
         assert_eq!(menu.code.text(), "7fq2k9xm3tbq");
+        assert_eq!(press(&mut menu, &[Key::Enter]), Control::Quit);
+        assert!(matches!(
+            chosen.take().map(|choice| choice.start),
+            Some(Start::Join(_))
+        ));
+    }
+
+    #[test]
+    fn a_pasted_code_fills_the_code_field() {
+        let (mut menu, chosen) = menu();
+        press(&mut menu, &[Key::Right, Key::Right]);
+        assert_eq!(menu.focus, Field::Mode);
+        let pasted = InputEvent::Paste("7FQ2-K9XM-3TBQ".to_owned());
+        assert_eq!(menu.input(&pasted), Control::Redraw);
+        assert_eq!(menu.focus, Field::Code);
         assert_eq!(press(&mut menu, &[Key::Enter]), Control::Quit);
         assert!(matches!(
             chosen.take().map(|choice| choice.start),
