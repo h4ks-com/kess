@@ -113,6 +113,14 @@ Press <kbd>c</kbd> to put the camera back behind your side.
 
 <p align="center"><img src="docs/screenshots/metal.jpg" alt="The metal set with silver and gold pieces mid-game, the board turned a little" width="700"></p>
 
+### See the board flat from above
+
+Keep tilting the board up past its highest angle, or press <kbd>t</kbd>, and
+it lays flat like a board in a 2D chess app, so every piece sits plainly on
+its square. Tilt it back down or press <kbd>t</kbd> again for the 3D board.
+
+<p align="center"><img src="docs/screenshots/flat.jpg" alt="The amber set on a flat board seen from above, with a knight picked up and its moves lit green and red" width="700"></p>
+
 ### Effects and sound for captures, check and checkmate
 
 A capture breaks the taken piece into sparks with a shockwave across the
@@ -148,6 +156,7 @@ brings the game back. If the host quits, the game ends.
 | `n` | ask for a rematch after a game |
 | `s` | switch between the amber, glass and metal sets |
 | `c` | put the camera back behind your side |
+| `t` | switch between the 3D board and a flat board seen from above |
 | `f` | turn the board around, in Two players |
 | `m` | mute or unmute |
 | `q` or `Ctrl+C` | quit |
