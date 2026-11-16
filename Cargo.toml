@@ -1,6 +1,6 @@
 [package]
 name = "kess"
-description = "Two-player online chess in the terminal, drawn in pixels with katui"
+description = "Chess on a glossy 3D board in your terminal, against a bot, on one keyboard, or online"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.90"

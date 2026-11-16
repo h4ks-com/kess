@@ -9,7 +9,8 @@
   <a href="#play">Play</a> ·
   <a href="#features">Features</a> ·
   <a href="#keys">Keys</a> ·
-  <a href="#how-online-play-works">How online play works</a>
+  <a href="#how-online-play-works">How online play works</a> ·
+  <a href="#build">Build</a>
 </p>
 
 <p align="center"><img src="docs/screenshots/kitty.png" alt="kess in a kitty window: glass pieces mid-game against the bot, with a knight's moves lit green and clocks in the corners" width="800"></p>
@@ -22,34 +23,39 @@ address.
 
 ## Install
 
-kess runs on macOS and Linux and needs Rust 1.90 or newer. If you don't
-have Rust yet, install it with [rustup](https://rustup.rs) and load it into
-your shell:
+kess runs on macOS and Linux, on x86_64 and arm64.
 
-```
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
-```
+<details>
+<summary><b>Homebrew</b> (macOS and Linux)</summary>
 
-If you already have an older Rust, run `rustup update`.
-
-On Linux, install a C compiler, pkg-config and the sound library first:
-
-```
-sudo apt install build-essential pkg-config libasound2-dev    # Debian and Ubuntu
-sudo dnf install gcc pkgconf-pkg-config alsa-lib-devel        # Fedora
-sudo pacman -S base-devel pkgconf alsa-lib                     # Arch
+```sh
+brew install h4ks-com/tap/kess
 ```
 
-Then install kess:
+</details>
 
+<details>
+<summary><b>cargo-binstall</b></summary>
+
+```sh
+cargo binstall --git https://github.com/h4ks-com/kess kess
 ```
+
+</details>
+
+<details>
+<summary><b>Cargo</b> (builds from source)</summary>
+
+```sh
 cargo install --git https://github.com/h4ks-com/kess
 ```
 
-cargo puts `kess` in `~/.cargo/bin`, which is on your `PATH` once rustup's
-environment is loaded. To build without sound, and without the Linux sound
-library, add `--no-default-features` to the install command.
+On Linux this needs the packages under [Build](#build) first.
+
+</details>
+
+Prebuilt binaries are on the
+[releases page](https://github.com/h4ks-com/kess/releases).
 
 kess looks like the screenshots in kitty, Ghostty and iTerm2. Terminals with
 sixel graphics, such as WezTerm and foot, show a lower quality picture, and
@@ -156,6 +162,35 @@ and the 75-move rule. kess has no claim for threefold repetition or the
 
 [HiveMQ]: https://www.hivemq.com/mqtt/public-mqtt-broker/
 [EMQX]: https://www.emqx.com/en/mqtt/public-mqtt5-broker
+
+## Build
+
+kess needs Rust 1.90 or newer. If you don't have Rust yet, install it with
+[rustup](https://rustup.rs) and load it into your shell, or run
+`rustup update` for an older one:
+
+```sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+```
+
+On Linux, install a C compiler, pkg-config and the sound library:
+
+```sh
+sudo apt install build-essential pkg-config libasound2-dev    # Debian and Ubuntu
+sudo dnf install gcc pkgconf-pkg-config alsa-lib-devel        # Fedora
+sudo pacman -S base-devel pkgconf alsa-lib                     # Arch
+```
+
+Then build and install `kess` from a clone:
+
+```sh
+git clone https://github.com/h4ks-com/kess && cd kess
+cargo install --path .
+```
+
+To build without sound, and without the Linux sound library, add
+`--no-default-features`.
 
 ## Development
 
