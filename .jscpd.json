@@ -1,0 +1,14 @@
+{
+  "minTokens": 70,
+  "threshold": 2,
+  "format": [
+    "rust"
+  ],
+  "ignore": [
+    "**/target/**"
+  ],
+  "reporters": [
+    "console"
+  ],
+  "gitignore": true
+}

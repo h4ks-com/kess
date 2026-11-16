@@ -1,0 +1,5 @@
+[default.extend-words]
+katui = "katui"
+
+[files]
+extend-exclude = ["Cargo.lock", "LICENSE", "assets/layout.json"]

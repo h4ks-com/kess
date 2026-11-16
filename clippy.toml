@@ -1,0 +1,7 @@
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true
+# 20 leaves the shape of honest code alone and still catches a function
+# that grew a second job
+cognitive-complexity-threshold = 20
