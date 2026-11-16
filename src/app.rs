@@ -561,7 +561,7 @@ impl Kess {
             MouseAction::Move => self.hover(at),
             MouseAction::WheelUp => self.zoom(0.95),
             MouseAction::WheelDown => self.zoom(1.05),
-            MouseAction::Press(Button::Middle) => {}
+            MouseAction::Press(_) | MouseAction::WheelLeft | MouseAction::WheelRight => {}
         }
     }
 
