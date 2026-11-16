@@ -48,6 +48,9 @@ jobs:
           - { os: macos-latest, target: x86_64-apple-darwin }
           - { os: windows-latest, target: x86_64-pc-windows-msvc }
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v7
         with:
@@ -68,6 +71,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
       - if: runner.os == 'Windows'
+        shell: pwsh
         run: Compress-Archive -Path "target/$env:TARGET/release/kess.exe", README.md, LICENSE -DestinationPath "kess-$env:TARGET.zip"
         env:
           TARGET: ${{ matrix.target }}
