@@ -275,13 +275,30 @@ fn a_host_copies_its_code_once_and_again_on_y() {
 }
 
 #[test]
+fn a_departed_opponent_ends_the_game_for_good() {
+    let code = RoomCode::random().unwrap();
+    let mut host = online(&code, Seat::Host);
+    host.receive(Message::Join { protocol: PROTOCOL });
+    assert!(host.my_turn());
+    host.receive(Message::Leave);
+    assert!(!host.my_turn());
+    type_keys(&mut host, &[Key::Char('n'), Key::Char('d'), Key::Char('r')]);
+    assert_eq!(host.resign_armed, 0.0);
+    assert!(
+        host.table
+            .as_ref()
+            .is_some_and(|table| table.verdict().is_none())
+    );
+}
+
+#[test]
 #[ignore = "needs the internet"]
 fn two_players_meet_and_trade_moves_through_the_brokers() {
     let code = RoomCode::random().unwrap();
     let mut host = online(&code, Seat::Host);
     let mut guest = online(&code, Seat::Guest);
-    assert!(wait(&mut host, &mut guest, |host, guest| host.joined
-        && guest.joined));
+    assert!(wait(&mut host, &mut guest, |host, guest| host.joined()
+        && guest.joined()));
     assert_eq!(guest.local(), [Side::Black]);
     type_keys(&mut host, &[Key::Enter, Key::Up, Key::Up, Key::Enter]);
     let moved =
@@ -292,10 +309,12 @@ fn two_players_meet_and_trade_moves_through_the_brokers() {
         |host: &Kess, _: &Kess| host.table.as_ref().is_some_and(|t| t.record().len() == 2);
     assert!(wait(&mut host, &mut guest, answered));
     assert_eq!(moves(&host), ["e2e4", "e7e5"]);
-    if let (Mode::Online { link: one, .. }, Mode::Online { link: two, .. }) =
-        (&host.mode, &guest.mode)
-    {
-        one.close();
-        two.close();
+    if let Mode::Online { link, .. } = &guest.mode {
+        link.close();
+    }
+    assert!(wait(&mut host, &mut guest, |host, _| host.opponent
+        == Opponent::Gone));
+    if let Mode::Online { link, .. } = &host.mode {
+        link.close();
     }
 }

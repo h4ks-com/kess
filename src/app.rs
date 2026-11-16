@@ -84,7 +84,7 @@ pub struct Kess {
     mode: Mode,
     table: Option<Table>,
     settings: Settings,
-    joined: bool,
+    opponent: Opponent,
     last_sent: Option<Snapshot>,
     brokers: BTreeSet<&'static str>,
     started: Instant,
@@ -106,6 +106,14 @@ pub struct Kess {
     copy_code: bool,
 }
 
+/// Who sits across the table.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Opponent {
+    Awaited,
+    Seated,
+    Gone,
+}
+
 impl Kess {
     #[must_use]
     pub fn new(
@@ -125,7 +133,7 @@ impl Kess {
             orbit,
             table: None,
             settings,
-            joined: false,
+            opponent: Opponent::Awaited,
             last_sent: None,
             brokers: BTreeSet::new(),
             started: Instant::now(),
@@ -150,7 +158,7 @@ impl Kess {
         match &kess.mode {
             Mode::Hotseat | Mode::Computer { .. } => {
                 kess.table = Some(Table::new(settings, 0));
-                kess.joined = true;
+                kess.opponent = Opponent::Seated;
             }
             Mode::Online { link, seat, .. } => {
                 if *seat == Seat::Host {
@@ -175,7 +183,7 @@ impl Kess {
                 seat: Seat::Host,
                 ..
             }
-        ) && !self.joined
+        ) && !self.joined()
     }
 
     fn now_ms(&self) -> u64 {
@@ -273,21 +281,28 @@ impl Kess {
             Message::Lobby { settings, .. } if seat == Seat::Guest && self.table.is_none() => {
                 self.settings = settings;
                 self.table = Some(Table::new(settings, now));
-                self.joined = true;
+                self.opponent = Opponent::Seated;
                 self.face_home();
                 self.send(&Message::Join { protocol: PROTOCOL });
                 self.say("you joined the game");
                 self.speaker.play(Cue::Notice);
             }
             Message::Join { .. } if seat == Seat::Host => {
-                if !self.joined {
+                if !self.joined() {
                     self.say("your opponent is here");
                     self.speaker.play(Cue::Notice);
                 }
-                self.joined = true;
+                self.opponent = Opponent::Seated;
                 self.last_sent = None;
             }
             Message::Table { settings, snapshot } => self.receive_table(settings, &snapshot, now),
+            Message::Leave if self.opponent == Opponent::Seated => {
+                self.opponent = Opponent::Gone;
+                self.picked = None;
+                self.promotion = None;
+                self.resign_armed = 0.0;
+                self.speaker.play(Cue::Notice);
+            }
             _ => {}
         }
     }
@@ -306,7 +321,7 @@ impl Kess {
                 Ok(table) => {
                     self.settings = settings;
                     self.table = Some(table);
-                    self.joined = true;
+                    self.opponent = Opponent::Seated;
                     self.face_home();
                     self.say("you rejoined the game");
                 }
@@ -317,7 +332,7 @@ impl Kess {
         let Some(table) = self.table.as_mut() else {
             return;
         };
-        self.joined = true;
+        self.opponent = Opponent::Seated;
         match table.merge(snapshot, them, now) {
             Ok(changes) => {
                 for change in changes {
@@ -344,7 +359,7 @@ impl Kess {
     }
 
     fn publish(&mut self) {
-        let (Some(table), true) = (&self.table, self.joined) else {
+        let (Some(table), true) = (&self.table, self.joined()) else {
             return;
         };
         if !matches!(self.mode, Mode::Online { .. })
@@ -652,7 +667,17 @@ impl Kess {
         let Some(table) = &self.table else {
             return false;
         };
-        self.joined && !table.is_over() && self.local().contains(&table.turn())
+        self.in_play() && !table.is_over() && self.local().contains(&table.turn())
+    }
+
+    /// Whether both players are at the table.
+    fn in_play(&self) -> bool {
+        self.opponent == Opponent::Seated
+    }
+
+    /// Whether the game ever started: the opponent sat down, even if they left since.
+    fn joined(&self) -> bool {
+        self.opponent != Opponent::Awaited
     }
 
     fn choose(&mut self) {
@@ -733,7 +758,7 @@ impl Kess {
     }
 
     fn arm_resign(&mut self) {
-        if self.table.as_ref().is_none_or(Table::is_over) || !self.joined {
+        if self.table.as_ref().is_none_or(Table::is_over) || !self.in_play() {
             return;
         }
         self.resign_armed = RESIGN_CONFIRM_SECONDS;
@@ -761,6 +786,9 @@ impl Kess {
     }
 
     fn offer_draw(&mut self) {
+        if !self.in_play() {
+            return;
+        }
         let side = self.acting_side();
         let Some(table) = self.table.as_mut() else {
             return;
@@ -773,6 +801,9 @@ impl Kess {
     }
 
     fn rematch(&mut self) {
+        if !self.in_play() {
+            return;
+        }
         let now = self.now_ms();
         let sides = match self.mode {
             Mode::Computer { .. } => vec![Side::White, Side::Black],

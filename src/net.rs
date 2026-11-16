@@ -104,10 +104,14 @@ impl Link {
         self.notes.try_iter()
     }
 
-    /// Wipe our message from the brokers and hang up.
+    /// Leave word that we quit in place of our last message, and hang up.
     pub fn close(&self) {
+        let parting = self
+            .cipher
+            .seal(&self.outbox, &Message::Leave)
+            .unwrap_or_default();
         for client in &self.clients {
-            let _ = client.try_publish(&self.outbox, QoS::AtLeastOnce, true, Vec::new());
+            let _ = client.try_publish(&self.outbox, QoS::AtLeastOnce, true, parting.clone());
             let _ = client.try_disconnect();
         }
         thread::sleep(Duration::from_millis(400));

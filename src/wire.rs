@@ -130,6 +130,8 @@ pub enum Message {
         settings: Settings,
         snapshot: Snapshot,
     },
+    /// The sender quit, so the game is over for good.
+    Leave,
 }
 
 #[derive(Clone)]

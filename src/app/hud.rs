@@ -2,7 +2,7 @@ use crate::net::{BROKERS, Role as Seat};
 use crate::table::{Side, Table};
 use crate::text::{Align, Canvas, Face, Paint};
 
-use super::{Kess, Mode, PROMOTIONS, clock_text, name};
+use super::{Kess, Mode, Opponent, PROMOTIONS, clock_text, name};
 
 const GOLD: [f32; 3] = [1.0, 0.8, 0.45];
 const DIM: [f32; 3] = [0.62, 0.58, 0.54];
@@ -149,9 +149,11 @@ fn capitalized(word: &str) -> String {
 }
 
 fn status(kess: &Kess, table: &Table, canvas: &mut Canvas<'_>, sizes: &Sizes) {
-    let text = if let Some(verdict) = table.verdict() {
+    let text = if kess.opponent == Opponent::Gone {
+        "your opponent left · q quit".to_owned()
+    } else if let Some(verdict) = table.verdict() {
         super::verdict_text(verdict).1
-    } else if !kess.joined {
+    } else if !kess.joined() {
         "waiting for your opponent".to_owned()
     } else {
         let whose = match (&kess.mode, kess.my_turn()) {
@@ -378,7 +380,7 @@ fn waiting(kess: &Kess, canvas: &mut Canvas<'_>, sizes: &Sizes) {
             ..
         },
         false,
-    ) = (&kess.mode, kess.joined)
+    ) = (&kess.mode, kess.joined())
     else {
         return;
     };
