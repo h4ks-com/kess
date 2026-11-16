@@ -85,8 +85,11 @@ jobs:
         with:
           files: dist/*.tar.gz
 
+  # crates.io trusts this workflow only after the crate exists and names it a
+  # trusted publisher, so the job waits for the PUBLISH_CRATE variable
   crate:
     needs: check
+    if: vars.PUBLISH_CRATE == 'true'
     runs-on: ubuntu-latest
     environment:
       name: crates-io

@@ -1,0 +1,11 @@
+name: Idea
+description: Something kess could do
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What you want to do in kess, and why.
+    validations:
+      required: true

@@ -11,6 +11,12 @@ categories = ["games", "command-line-utilities"]
 keywords = ["chess", "terminal", "kitty-graphics", "multiplayer", "katui"]
 exclude = ["assets/render.py", "docs/screenshots"]
 
+# cargo binstall downloads the archive the release workflow attaches
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/{ name }-{ target }.tar.gz"
+bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "tgz"
+
 [features]
 default = ["sound"]
 sound = ["dep:rodio"]
