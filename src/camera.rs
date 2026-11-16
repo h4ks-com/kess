@@ -5,6 +5,8 @@ const MOST_YAW: f32 = 0.7;
 /// The sprites look right within this range of heights around the render camera's.
 const LOWEST_PITCH: f32 = 0.6;
 const HIGHEST_PITCH: f32 = 0.85;
+/// How far past the steepest pitch a drag pushes to lay the board flat, and pulls back to stand it up.
+const FLAT_PUSH: f32 = 0.15;
 const NEAREST: f32 = 0.85;
 const FARTHEST: f32 = 1.2;
 
@@ -19,6 +21,8 @@ pub struct Orbit {
     pub pitch: f32,
     /// How far we stand, as a factor of the render camera's distance.
     pub zoom: f32,
+    /// Whether we look straight down on a flat board, with the sprites drawn upright.
+    pub flat: bool,
 }
 
 /// The render camera's numbers, from assets/layout.json.
@@ -51,6 +55,7 @@ impl Lens {
             yaw: 0.0,
             pitch: self.pitch,
             zoom: 1.0,
+            flat: false,
         }
     }
 }
@@ -63,6 +68,42 @@ impl Orbit {
             yaw: (self.yaw + yaw).clamp(-MOST_YAW, MOST_YAW),
             pitch: (self.pitch + pitch).clamp(LOWEST_PITCH, HIGHEST_PITCH),
             ..self
+        }
+    }
+
+    /// Swing by a mouse drag that already pushed `push` past the steepest
+    /// pitch, with the push it leaves: pushing on lays the board flat, and
+    /// pulling back from flat stands it up again.
+    #[must_use]
+    pub fn dragged(self, yaw: f32, pitch: f32, push: f32) -> (Self, f32) {
+        if self.flat {
+            let pull = (push + pitch).min(0.0);
+            return if pull < -FLAT_PUSH {
+                (
+                    Self {
+                        flat: false,
+                        pitch: HIGHEST_PITCH,
+                        ..self
+                    },
+                    0.0,
+                )
+            } else {
+                (self, pull)
+            };
+        }
+        let reach = self.pitch + push + pitch;
+        let past = (reach - HIGHEST_PITCH).max(0.0);
+        let swung = self.swung(yaw, reach - self.pitch);
+        if past > FLAT_PUSH {
+            (
+                Self {
+                    flat: true,
+                    ..swung
+                },
+                0.0,
+            )
+        } else {
+            (swung, past)
         }
     }
 
@@ -183,6 +224,53 @@ impl View {
     }
 }
 
+/// The board seen straight from above, its frame filling the largest
+/// square that fits above the key hints, with the player's side at the bottom.
+#[derive(Debug, Clone, Copy)]
+pub struct Flat {
+    center: P2,
+    /// Screen pixels one board unit spans down; across it spans this over the pixel aspect.
+    pub scale: f32,
+    aspect: f32,
+    /// 1 from white's side, -1 from black's.
+    facing: f32,
+}
+
+impl Flat {
+    /// The flat board for the side `orbit` looks from, on a screen of
+    /// `width` by `height` game pixels, `span` board units across.
+    #[must_use]
+    pub fn new(orbit: Orbit, width: f32, height: f32, aspect: f32, span: f32) -> Self {
+        // we leave the key hints a strip along the bottom, so the file letters above it show
+        let room = height * 0.95;
+        Self {
+            center: P2::new(width / 2.0, room / 2.0),
+            scale: room.min(width * aspect) / span,
+            aspect,
+            facing: if orbit.home.cos() > 0.0 { 1.0 } else { -1.0 },
+        }
+    }
+
+    /// `point` on screen, its height lifting it straight up the screen.
+    #[must_use]
+    pub fn place(&self, point: V3) -> P2 {
+        P2::new(
+            self.center.x + self.facing * point.x * self.scale / self.aspect,
+            self.center.y - (self.facing * point.y + point.z) * self.scale,
+        )
+    }
+
+    /// The board point under screen pixel `spot`.
+    #[must_use]
+    pub fn on_board(&self, spot: P2) -> V3 {
+        v3(
+            self.facing * (spot.x - self.center.x) * self.aspect / self.scale,
+            self.facing * (self.center.y - spot.y) / self.scale,
+            0.0,
+        )
+    }
+}
+
 impl Lens {
     /// How a sprite rendered at the board's center measures across
     /// against up: what turns a sprite's rendered unit of height into its
@@ -258,5 +346,50 @@ mod tests {
             (orbit.yaw, orbit.pitch, orbit.zoom),
             (MOST_YAW, HIGHEST_PITCH, FARTHEST)
         );
+    }
+
+    #[test]
+    fn pushing_past_the_top_lays_the_board_flat_and_pulling_back_stands_it_up() {
+        let lens = lens();
+        let (top, push) = lens.home(true).dragged(0.0, 0.2, 0.0);
+        assert!(!top.flat && top.pitch == HIGHEST_PITCH && push > 0.0);
+        let (still, push) = top.dragged(0.0, FLAT_PUSH - push - 0.01, push);
+        assert!(!still.flat);
+        let (flat, push) = still.dragged(0.0, 0.02, push);
+        assert!(flat.flat);
+        assert_eq!(push, 0.0);
+        let (raised, push) = flat.dragged(0.3, 0.4, push);
+        assert!(raised.flat && raised.yaw == 0.0 && push == 0.0);
+        let (held, push) = raised.dragged(0.0, -FLAT_PUSH * 0.9, push);
+        assert!(held.flat);
+        let (stood, push) = held.dragged(0.0, -FLAT_PUSH * 0.2, push);
+        assert!(!stood.flat);
+        assert_eq!((stood.pitch, push), (HIGHEST_PITCH, 0.0));
+    }
+
+    #[test]
+    fn a_flat_square_is_square_and_maps_back_to_itself_from_both_sides() {
+        let lens = lens();
+        for white in [true, false] {
+            let flat = Flat::new(lens.home(white), 1200.0, 500.0, 0.5, 9.5);
+            for (file, rank) in [(0.0, 0.0), (3.0, 6.0), (7.0, 7.0)] {
+                let corner = |x: f32, y: f32| flat.place(v3(file - 4.0 + x, rank - 4.0 + y, 0.0));
+                let (low, high) = (corner(0.0, 0.0), corner(1.0, 1.0));
+                let across = (high.x - low.x).abs() * 0.5;
+                assert!((across - (high.y - low.y).abs()).abs() < 1e-3);
+                let middle = P2::new(low.x.midpoint(high.x), low.y.midpoint(high.y));
+                let back = flat.on_board(middle);
+                assert_eq!(
+                    ((back.x + 4.0).floor(), (back.y + 4.0).floor()),
+                    (file, rank)
+                );
+            }
+            let a1 = flat.place(v3(-3.5, -3.5, 0.0));
+            assert_eq!(
+                a1.x < 600.0 && a1.y > 250.0,
+                white,
+                "a1 sits at the bottom left for white only"
+            );
+        }
     }
 }

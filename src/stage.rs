@@ -8,7 +8,7 @@ use image::imageops::{FilterType, resize};
 use katui::game::{Light, P2, Rgb, V3, v3};
 
 use crate::art::{Art, Cutout, Mipmaps, PIECES, Style};
-use crate::camera::{Orbit, View};
+use crate::camera::{Flat, Orbit, View};
 use crate::table::Side;
 
 /// How thick the board stands above the floor, in board units.
@@ -16,6 +16,8 @@ const THICKNESS: f32 = 0.3;
 /// Sprite sizes are cached in steps of this ratio, so a moving camera reuses them.
 const SIZE_STEP: f32 = 1.03;
 const FLOOR: [f32; 3] = [0.018, 0.014, 0.012];
+/// How much of a square the largest piece of a flat board fills.
+const FLAT_FILL: f32 = 0.88;
 
 /// How the board's lacquer catches the light.
 struct Finish {
@@ -72,6 +74,8 @@ struct Sprite {
     width: usize,
     height: usize,
     foot: [f32; 2],
+    /// The row the visible piece ends on.
+    base: f32,
     pixels: Vec<[f32; 4]>,
 }
 
@@ -91,6 +95,7 @@ impl Sprite {
             width: width as usize,
             height: height as usize,
             foot: [cutout.foot[0] * across, cutout.foot[1] * down],
+            base: cutout.bounds[3] * down,
             pixels,
         }
     }
@@ -114,6 +119,7 @@ pub struct Stage {
     pub orbit: Orbit,
     draft: bool,
     pub view: View,
+    flat: Option<Flat>,
     base: Vec<[f32; 3]>,
     frame: Vec<[f32; 3]>,
     painted: Light,
@@ -134,10 +140,27 @@ impl Stage {
             height as f32,
             light.pixel_aspect(),
         );
-        let base = art.board(style).map_or_else(
-            || vec![FLOOR; width * height],
-            |mips| backdrop(&view, mips, art.board_span, style, (width, height), draft),
-        );
+        let flat = orbit.flat.then(|| {
+            Flat::new(
+                orbit,
+                width as f32,
+                height as f32,
+                light.pixel_aspect(),
+                art.board_span,
+            )
+        });
+        let span = art.board_span;
+        let base = match (art.board(style), flat) {
+            (None, _) => vec![FLOOR; width * height],
+            (Some(mips), Some(flat)) => {
+                backdrop((width, height), draft, top_down(flat, mips, span, style))
+            }
+            (Some(mips), None) => backdrop(
+                (width, height),
+                draft,
+                perspective(&view, mips, span, style),
+            ),
+        };
         Self {
             width,
             height,
@@ -145,6 +168,7 @@ impl Stage {
             orbit,
             draft,
             view,
+            flat,
             frame: base.clone(),
             base,
             painted: Light::new(width as u32, height as u32, light.pixel_aspect()),
@@ -181,7 +205,27 @@ impl Stage {
     /// The point of the board under piece position `at`, `lift` units up.
     #[must_use]
     pub fn spot(&self, at: [f32; 2], lift: f32) -> Option<P2> {
-        self.view.place(world(at, lift))
+        match &self.flat {
+            Some(flat) => Some(flat.place(world(at, lift))),
+            None => self.view.place(world(at, lift)),
+        }
+    }
+
+    /// Screen pixels one board unit of height spans at piece position `at`.
+    #[must_use]
+    pub fn unit(&self, at: [f32; 2]) -> f32 {
+        match &self.flat {
+            Some(flat) => flat.scale,
+            None => self.view.unit(world(at, 0.0)),
+        }
+    }
+
+    /// How far piece position `at` lies from the eye, to draw the far pieces first.
+    fn depth(&self, at: [f32; 2]) -> Option<f32> {
+        match &self.flat {
+            Some(flat) => Some(-flat.place(world(at, 0.0)).y),
+            None => Some(self.view.project(world(at, 0.0))?.1),
+        }
     }
 
     pub fn compose(&mut self, art: &Art, pieces: &[Placed], marks: &[Mark]) {
@@ -206,13 +250,15 @@ impl Stage {
         }
         let mut order: Vec<(f32, Placed)> = pieces
             .iter()
-            .filter_map(|piece| Some((self.view.project(world(piece.at, 0.0))?.1, *piece)))
+            .filter_map(|piece| Some((self.depth(piece.at)?, *piece)))
             .collect();
         order.sort_by(|one, two| two.0.total_cmp(&one.0));
         let gloss = finish(self.style).reflection;
         self.drawn.clear();
-        for (_, piece) in &order {
-            self.stamp(art, piece, Some(gloss));
+        if self.flat.is_none() {
+            for (_, piece) in &order {
+                self.stamp(art, piece, Some(gloss));
+            }
         }
         for (_, piece) in &order {
             self.stamp(art, piece, None);
@@ -236,10 +282,14 @@ impl Stage {
                 PIECES.len()
             };
         let cutout = art.piece(self.style, piece.side, piece.letter)?;
-        // a piece shrinks with its distance alone; the board's height unit also
-        // grows where the view flattens, which would swell the far ranks
-        let breadth = self.view.breadth(world(piece.at, 0.0));
-        let scale = breadth / (cutout.unit.max(1.0) * art.lens.breadth_per_unit());
+        let scale = if let Some(flat) = &self.flat {
+            flat.scale * FLAT_FILL / art.flat_extent(self.style)
+        } else {
+            // a piece shrinks with its distance alone; the board's height unit also
+            // grows where the view flattens, which would swell the far ranks
+            let breadth = self.view.breadth(world(piece.at, 0.0));
+            breadth / (cutout.unit.max(1.0) * art.lens.breadth_per_unit())
+        };
         let bucket = (scale.max(1e-3).ln() / SIZE_STEP.ln()).round() as i32;
         let key = (index, bucket);
         if !self.sprites.contains_key(&key) {
@@ -265,6 +315,14 @@ impl Stage {
         };
         let Some(sprite) = self.sprites.get(&key) else {
             return;
+        };
+        let foot = match &self.flat {
+            // we stand the piece's lowest pixel a little above its square's lower edge
+            Some(flat) => P2::new(
+                foot.x,
+                foot.y + flat.scale * FLAT_FILL / 2.0 - (sprite.base - sprite.foot[1]),
+            ),
+            None => foot,
         };
         let left = (foot.x - sprite.foot[0]).round() as isize;
         let foot_row = sprite.foot[1].round() as isize;
@@ -319,6 +377,9 @@ impl Stage {
     /// piece first, then the board itself.
     #[must_use]
     pub fn square_at(&self, spot: P2) -> Option<(usize, usize)> {
+        if self.flat.is_some() {
+            return self.board_square_at(spot);
+        }
         let (x, y) = (spot.x.round() as isize, spot.y.round() as isize);
         let hit = self.drawn.iter().rev().find(|drawn| {
             let Some(sprite) = self.sprites.get(&drawn.sprite) else {
@@ -339,7 +400,10 @@ impl Stage {
     /// The square of the board itself under `spot`, looking past any piece in front.
     #[must_use]
     pub fn board_square_at(&self, spot: P2) -> Option<(usize, usize)> {
-        let point = self.view.on_plane(spot, 0.0)?;
+        let point = match &self.flat {
+            Some(flat) => flat.on_board(spot),
+            None => self.view.on_plane(spot, 0.0)?,
+        };
         let (file, rank) = ((point.x + 4.0).floor(), (point.y + 4.0).floor());
         ((0.0..8.0).contains(&file) && (0.0..8.0).contains(&rank))
             .then_some((file as usize, rank as usize))
@@ -399,28 +463,26 @@ fn to_light(display: [f32; 3]) -> Rgb {
     })
 }
 
-/// The board in perspective with its frame, sides, floor and a sheen that
-/// follows the camera, in display values, with the rows split over every core.
+/// Every pixel `shade` gives, in display values, with the rows split over
+/// every core; a `draft` shades every other row and column.
 fn backdrop(
-    view: &View,
-    mips: &Mipmaps,
-    span: f32,
-    style: Style,
     size: (usize, usize),
     draft: bool,
+    shade: impl Fn(P2) -> [f32; 3] + Sync,
 ) -> Vec<[f32; 3]> {
     let (width, height) = size;
     let mut out = vec![FLOOR; width * height];
     let cores = std::thread::available_parallelism().map_or(4, std::num::NonZero::get);
     // bands hold whole row pairs, so a draft can copy each row into the one below
     let band = height.div_ceil(cores).div_ceil(2).max(1) * 2 * width;
+    let shade = &shade;
     std::thread::scope(|scope| {
         for (index, rows) in out.chunks_mut(band).enumerate() {
             let first = index * band / width.max(1);
             scope.spawn(move || {
                 let mut lines = rows.chunks_exact_mut(width).enumerate();
                 while let Some((offset, row)) = lines.next() {
-                    shade_row(view, mips, span, style, first + offset, row, draft);
+                    shade_row(shade, first + offset, row, draft);
                     if draft && let Some((_, below)) = lines.next() {
                         below.copy_from_slice(row);
                     }
@@ -431,43 +493,79 @@ fn backdrop(
     out
 }
 
-fn shade_row(
-    view: &View,
-    mips: &Mipmaps,
-    span: f32,
-    style: Style,
-    y: usize,
-    row: &mut [[f32; 3]],
-    draft: bool,
-) {
-    let half = span / 2.0;
-    let finish = finish(style);
-    // the key light hangs behind the board, so its sheen shows on the far squares
-    let light = v3(-0.25, 0.85, 0.6).normalized();
-    let edge = mips.sample(0.01, 0.5, 64.0);
-    let texel = span / mips.size() as f32;
+fn shade_row(shade: &impl Fn(P2) -> [f32; 3], y: usize, row: &mut [[f32; 3]], draft: bool) {
     let mut previous = FLOOR;
     for (x, pixel) in row.iter_mut().enumerate() {
         if draft && x % 2 == 1 {
             *pixel = previous;
             continue;
         }
-        let spot = P2::new(x as f32 + 0.5, y as f32 + 0.5);
+        *pixel = shade(P2::new(x as f32 + 0.5, y as f32 + 0.5));
+        previous = *pixel;
+    }
+}
+
+/// The key light hangs behind the board, so its sheen shows on the far squares.
+fn key_light() -> V3 {
+    v3(-0.25, 0.85, 0.6).normalized()
+}
+
+/// The board texture's color at board point `hit`, `texels` texture pixels per screen pixel.
+fn albedo(mips: &Mipmaps, span: f32, hit: V3, texels: f32) -> [f32; 3] {
+    let half = span / 2.0;
+    mips.sample((hit.x + half) / span, (half - hit.y) / span, texels)
+}
+
+/// The board in perspective with its frame, sides, floor and a sheen that follows the camera.
+fn perspective<'a>(
+    view: &'a View,
+    mips: &'a Mipmaps,
+    span: f32,
+    style: Style,
+) -> impl Fn(P2) -> [f32; 3] + Sync + 'a {
+    let half = span / 2.0;
+    let finish = finish(style);
+    let light = key_light();
+    let edge = mips.sample(0.01, 0.5, 64.0);
+    let texel = span / mips.size() as f32;
+    move |spot| {
         let ray = view.ray(spot);
-        *pixel = match view.on_plane(spot, 0.0) {
+        match view.on_plane(spot, 0.0) {
             Some(hit) if hit.x.abs() <= half && hit.y.abs() <= half => {
                 // one pixel down spans the most board, so it sets the texture detail
                 let next = view
                     .on_plane(P2::new(spot.x, spot.y + 1.0), 0.0)
                     .unwrap_or(hit);
                 let reach = (next - hit).dot(next - hit).sqrt();
-                let albedo =
-                    mips.sample((hit.x + half) / span, (half - hit.y) / span, reach / texel);
-                lacquer(albedo, ray, light, &finish)
+                lacquer(albedo(mips, span, hit, reach / texel), ray, light, &finish)
             }
-            _ => sides(view, ray, half, edge, light).unwrap_or_else(|| floor(view, spot, half)),
-        };
-        previous = *pixel;
+            _ => sides(view, ray, half, edge, light).unwrap_or_else(|| {
+                view.on_plane(spot, -THICKNESS)
+                    .map_or(FLOOR, |hit| floor(hit, half))
+            }),
+        }
+    }
+}
+
+/// The board seen straight from above, on the floor.
+fn top_down(
+    flat: Flat,
+    mips: &Mipmaps,
+    span: f32,
+    style: Style,
+) -> impl Fn(P2) -> [f32; 3] + Sync + '_ {
+    let half = span / 2.0;
+    let finish = finish(style);
+    let light = key_light();
+    let texels = mips.size() as f32 / span / flat.scale;
+    let down = v3(0.0, 0.0, -1.0);
+    move |spot| {
+        let hit = flat.on_board(spot);
+        if hit.x.abs() <= half && hit.y.abs() <= half {
+            lacquer(albedo(mips, span, hit, texels), down, light, &finish)
+        } else {
+            floor(hit, half)
+        }
     }
 }
 
@@ -512,11 +610,8 @@ fn sides(view: &View, ray: V3, half: f32, edge: [f32; 3], light: V3) -> Option<[
     Some(edge.map(|channel| channel * shade))
 }
 
-/// The dark floor, with the board's soft shadow and a faint pool of light.
-fn floor(view: &View, spot: P2, half: f32) -> [f32; 3] {
-    let Some(hit) = view.on_plane(spot, -THICKNESS) else {
-        return FLOOR;
-    };
+/// The dark floor at `hit`, with the board's soft shadow and a faint pool of light.
+fn floor(hit: V3, half: f32) -> [f32; 3] {
     let outside = (hit.x.abs() - half).max(hit.y.abs() - half).max(0.0);
     let shadow = 1.0 - 0.85 * (-outside * 1.4).exp();
     let pool = 1.0 + 1.6 * (-(hit.x * hit.x + hit.y * hit.y) / 90.0).exp();

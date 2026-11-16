@@ -10,7 +10,7 @@ const INK: [f32; 3] = [0.03, 0.025, 0.02];
 const RED: [f32; 3] = [1.0, 0.35, 0.28];
 /// Below this many pixels tall the key hints would cover the board.
 const HINTS_MIN_HEIGHT: f32 = 300.0;
-const HINTS: &str = "arrows or hjkl aim · enter move · drag turn · wheel zoom · r resign · d draw · n rematch · s set · m mute · q quit";
+const HINTS: &str = "arrows or hjkl aim · enter move · drag turn · wheel zoom · t flat board · r resign · d draw · n rematch · s set · m mute · q quit";
 
 /// Text sizes that follow the screen.
 #[derive(Clone, Copy)]

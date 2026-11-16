@@ -113,6 +113,31 @@ pub struct Cutout {
     pub foot: [f32; 2],
     /// Pixels per board unit of height in the render.
     pub unit: f32,
+    /// The visible piece's left, top, right and bottom edges, in the image's pixels.
+    pub bounds: [f32; 4],
+}
+
+impl Cutout {
+    fn new(image: RgbaImage, frame: PieceFrame) -> Self {
+        let mut bounds = [f32::MAX, f32::MAX, 0.0, 0.0];
+        for (x, y, pixel) in image.enumerate_pixels() {
+            if pixel.0[3] > 64 {
+                let (x, y) = (x as f32, y as f32);
+                bounds = [
+                    bounds[0].min(x),
+                    bounds[1].min(y),
+                    bounds[2].max(x + 1.0),
+                    bounds[3].max(y + 1.0),
+                ];
+            }
+        }
+        Self {
+            image,
+            foot: frame.foot,
+            unit: frame.unit,
+            bounds,
+        }
+    }
 }
 
 /// A board texture at a few sizes, so far squares don't shimmer.
@@ -204,11 +229,7 @@ impl Art {
                         .pieces
                         .get(letter)
                         .ok_or(ArtError::Missing(*letter))?;
-                    Ok(Cutout {
-                        image: decode(bytes, ImageFormat::Png)?,
-                        foot: frame.foot,
-                        unit: frame.unit,
-                    })
+                    Ok(Cutout::new(decode(bytes, ImageFormat::Png)?, *frame))
                 })
                 .collect::<Result<Vec<_>, ArtError>>()?;
             pieces.push(cut);
@@ -233,6 +254,22 @@ impl Art {
         let kind = PIECES.iter().position(|known| *known == letter)?;
         let offset = if side == Side::White { 0 } else { PIECES.len() };
         self.pieces.get(style.index())?.get(offset + kind)
+    }
+
+    /// The image pixels the set's largest piece spans, tall or wide around
+    /// its foot, so every piece of a flat board shares one scale.
+    #[must_use]
+    pub fn flat_extent(&self, style: Style) -> f32 {
+        self.pieces
+            .get(style.index())
+            .into_iter()
+            .flatten()
+            .map(|piece| {
+                let [left, top, right, bottom] = piece.bounds;
+                let half = (piece.foot[0] - left).max(right - piece.foot[0]);
+                (bottom - top).max(half * 2.0)
+            })
+            .fold(1.0, f32::max)
     }
 }
 
@@ -261,6 +298,9 @@ mod tests {
                     assert!((0.0..width).contains(&piece.foot[0]));
                     assert!(piece.foot[1] > height * 0.5 && piece.foot[1] < height);
                     assert!(piece.unit > 50.0);
+                    let [left, top, right, bottom] = piece.bounds;
+                    assert!(left < piece.foot[0] && piece.foot[0] < right);
+                    assert!(top < piece.foot[1] && piece.foot[1] <= bottom);
                 }
             }
         }

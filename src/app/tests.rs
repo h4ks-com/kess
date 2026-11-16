@@ -101,6 +101,41 @@ fn a_drag_turns_the_board_instead_of_clicking() {
 }
 
 #[test]
+fn a_click_on_the_flat_board_moves_from_black_too() {
+    let mut kess = game(Mode::Hotseat, Style::Amber);
+    type_keys(&mut kess, &[Key::Char('t'), Key::Char('f')]);
+    play_out(&mut kess, &["e2e4"]);
+    frame(&mut kess, 900, 400);
+    let stage = kess.stage.as_ref().unwrap();
+    let pawn = stage.spot([3.5, 6.5], 0.0).unwrap();
+    let d5 = stage.spot([3.5, 4.5], 0.0).unwrap();
+    assert!(pawn.y > d5.y, "black's pawns sit at the bottom");
+    for spot in [pawn, d5] {
+        kess.pointer(MouseAction::Press(Button::Left), spot);
+        kess.pointer(MouseAction::Release(Button::Left), spot);
+    }
+    assert_eq!(moves(&kess), ["e2e4", "d7d5"]);
+    assert!(kess.orbit.flat);
+}
+
+#[test]
+fn dragging_on_past_the_top_flattens_the_board_and_back_down_raises_it() {
+    let mut kess = game(Mode::Hotseat, Style::Glass);
+    frame(&mut kess, 800, 500);
+    let drag = |kess: &mut Kess, to: f32| {
+        kess.pointer(MouseAction::Press(Button::Left), P2::new(400.0, 250.0));
+        kess.pointer(MouseAction::Drag(Button::Left), P2::new(400.0, to));
+        kess.pointer(MouseAction::Release(Button::Left), P2::new(400.0, to));
+    };
+    drag(&mut kess, 300.0);
+    assert!(!kess.orbit.flat);
+    drag(&mut kess, 420.0);
+    assert!(kess.orbit.flat);
+    drag(&mut kess, 150.0);
+    assert!(!kess.orbit.flat);
+}
+
+#[test]
 fn the_bot_answers_without_blocking() {
     let mut kess = game(Mode::Computer { human: Side::White }, Style::Metal);
     type_keys(&mut kess, &[Key::Enter, Key::Up, Key::Up, Key::Enter]);
@@ -183,6 +218,13 @@ fn screenshots() {
         });
         shoot(&mut kess, 1600, 1000, &folder, style.name());
     }
+    let mut kess = game(Mode::Hotseat, Style::Amber);
+    kess.orbit.flat = true;
+    play_out(&mut kess, &opening);
+    step_for(&mut kess, 2.0);
+    kess.picked = Some(Square::F6);
+    kess.cursor = (5, 5);
+    shoot(&mut kess, 1600, 1000, &folder, "flat");
     let mut kess = game(Mode::Hotseat, Style::Glass);
     play_out(&mut kess, &["e2e4", "d7d5"]);
     let change = kess

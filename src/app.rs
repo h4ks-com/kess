@@ -73,6 +73,8 @@ struct Drag {
     start: P2,
     last: P2,
     turning: bool,
+    /// How far this drag pushed the camera past its steepest pitch.
+    push: f32,
 }
 
 pub struct Kess {
@@ -220,9 +222,17 @@ impl Kess {
         } else {
             self.local().first().copied().unwrap_or(Side::White)
         };
-        self.orbit = self.art.lens.home(side == Side::White);
+        self.rehome(side == Side::White);
         self.cursor = if side == Side::White { (4, 1) } else { (4, 6) };
         self.dirty = true;
+    }
+
+    /// Put the camera back behind `white` or black, keeping the board flat or not.
+    fn rehome(&mut self, white: bool) {
+        self.orbit = Orbit {
+            flat: self.orbit.flat,
+            ..self.art.lens.home(white)
+        };
     }
 
     fn is_hotseat(&self) -> bool {
@@ -529,9 +539,10 @@ impl Kess {
             }
             Key::Char('f') if self.is_hotseat() => {
                 let white = self.view() == Side::Black;
-                self.orbit = self.art.lens.home(white);
+                self.rehome(white);
             }
-            Key::Char('c') => self.orbit = self.art.lens.home(self.view() == Side::White),
+            Key::Char('c') => self.rehome(self.view() == Side::White),
+            Key::Char('t') => self.orbit.flat = !self.orbit.flat,
             Key::Char('m') => {
                 self.speaker.muted = !self.speaker.muted;
                 self.say(if self.speaker.muted {
@@ -584,6 +595,7 @@ impl Kess {
                     start: at,
                     last: at,
                     turning: false,
+                    push: 0.0,
                 });
             }
             MouseAction::Drag(_) => self.turn_board(at),
@@ -611,7 +623,7 @@ impl Kess {
             let (width, height) = self.screen;
             let yaw = (drag.last.x - at.x) / width * 2.2;
             let pitch = (at.y - drag.last.y) / height * 1.4;
-            self.orbit = self.orbit.swung(yaw, pitch);
+            (self.orbit, drag.push) = self.orbit.dragged(yaw, pitch, drag.push);
             self.dirty = true;
         }
         drag.last = at;

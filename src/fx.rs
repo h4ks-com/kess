@@ -324,7 +324,6 @@ impl Effects {
     }
 
     pub fn draw(&self, light: &mut Light, stage: &Stage) {
-        let unit = |at: [f32; 2]| stage.view.unit(v3(at[0] - 4.0, at[1] - 4.0, 0.0));
         for shock in &self.shocks {
             let t = shock.age / SHOCK_SECONDS;
             let radius = shock.reach * (1.0 - (1.0 - t).powi(3));
@@ -351,7 +350,7 @@ impl Effects {
             if let Some(spot) = stage.spot(flash.at, 0.4) {
                 light.glow(
                     spot,
-                    unit(flash.at) * (0.8 + t),
+                    stage.unit(flash.at) * (0.8 + t),
                     scaled(flash.color, 3.0 * (1.0 - t).powi(2)),
                 );
             }
