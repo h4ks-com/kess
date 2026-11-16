@@ -10,7 +10,8 @@
   <a href="#features">Features</a> ·
   <a href="#keys">Keys</a> ·
   <a href="#how-online-play-works">How online play works</a> ·
-  <a href="#build">Build</a>
+  <a href="#build">Build</a> ·
+  <a href="https://chat.h4ks.com">IRC</a>
 </p>
 
 <p align="center"><img src="docs/screenshots/kitty.png" alt="kess in a kitty window: glass pieces mid-game against the bot, with a knight's moves lit green and clocks in the corners" width="800"></p>
