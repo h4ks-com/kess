@@ -24,7 +24,7 @@ const TILE_HEIGHTS: u32 = 3;
 /// The most game pixels we compose each frame, which is what the CPU keeps up with.
 const MOST_PIXELS_ACROSS: u32 = 1800;
 const MOST_PIXELS_DOWN: u32 = 1100;
-/// A multiplexer carries graphics far slower, so we send this many times fewer pixels each way.
+/// A multiplexer carries inline graphics far slower, so we send this many times fewer pixels each way.
 const MULTIPLEXED_SHRINK: u32 = 2;
 
 /// A game the runner drives: keys, the mouse, a fixed step, light to draw
@@ -82,7 +82,8 @@ fn density(size: CellSize, caps: &Capabilities, cell: CellPixels) -> (u32, u32) 
     if select(caps) == Backend::Blocks {
         return (2, 2);
     }
-    let shrink = if caps.multiplexed() {
+    let local = caps.shared_memory || caps.local_files;
+    let shrink = if caps.multiplexed() && !local {
         MULTIPLEXED_SHRINK
     } else {
         1
