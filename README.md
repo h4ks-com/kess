@@ -40,9 +40,13 @@ brew install h4ks-com/tap/kess
 <summary><b>Scoop</b> (Windows)</summary>
 
 ```sh
+scoop bucket add versions
+scoop install versions/wezterm-nightly
 scoop bucket add h4ks https://github.com/h4ks-com/scoop-bucket
 scoop install h4ks/kess
 ```
+
+Then run `kess` in WezTerm, which these lines install too.
 
 </details>
 
@@ -70,12 +74,11 @@ Prebuilt binaries are on the
 [releases page](https://github.com/h4ks-com/kess/releases). On Windows,
 unzip `kess-x86_64-pc-windows-msvc.zip` and run `kess.exe`.
 
-kess looks like the screenshots in kitty, Ghostty and iTerm2. Terminals with
-sixel graphics, such as WezTerm and foot, show a lower quality picture, and
-the rest, such as Alacritty and Terminal.app, show one made of block
-characters. On Windows, a
-[WezTerm nightly](https://wezterm.org/install/windows.html) build shows the
-full picture and Windows Terminal 1.22 or newer shows sixel.
+kess looks like the screenshots in kitty, Ghostty and a
+[WezTerm nightly](https://wezterm.org/installation.html) build. Terminals
+with sixel graphics, such as iTerm2, foot and Windows Terminal 1.22 or
+newer, show a lower quality picture, and the rest, such as Alacritty and
+Terminal.app, show one made of block characters.
 
 ## Play
 
