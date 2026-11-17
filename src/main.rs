@@ -25,6 +25,7 @@ options:
   --clock <min+sec>            time control, like 5+3 (default: none)
   --set <amber|glass|metal>    the piece set to start with
   --mute                       start without sound
+  --version                    print the version and the commit it was built from
 ";
 
 #[derive(Debug, thiserror::Error)]
@@ -171,7 +172,23 @@ fn run(options: &Options) -> Result<(), CliError> {
     Ok(played?)
 }
 
+/// The release, and the commit it was built from when the build knew it.
+fn version() -> String {
+    let release = env!("CARGO_PKG_VERSION");
+    option_env!("KESS_COMMIT").map_or_else(
+        || format!("kess {release}"),
+        |commit| format!("kess {release} ({commit})"),
+    )
+}
+
 fn main() -> ExitCode {
+    if std::env::args()
+        .skip(1)
+        .any(|arg| arg == "--version" || arg == "-V")
+    {
+        let _ = writeln!(io::stdout(), "{}", version());
+        return ExitCode::SUCCESS;
+    }
     let result = parse(std::env::args().skip(1)).and_then(|options| run(&options));
     let mut stderr = io::stderr();
     match result {
