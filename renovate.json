@@ -4,25 +4,25 @@
     "config:recommended",
     "helpers:pinGitHubActionDigests"
   ],
-  "schedule": [
-    "before 6am on Monday"
-  ],
   "labels": [
     "dependencies"
   ],
   "rangeStrategy": "bump",
   "packageRules": [
     {
-      "matchManagers": [
-        "cargo"
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
       ],
-      "groupName": "rust dependencies"
+      "groupName": "all non-major dependencies"
     },
     {
-      "matchManagers": [
-        "github-actions"
+      "matchUpdateTypes": [
+        "major"
       ],
-      "groupName": "github actions"
+      "groupName": "all major dependencies"
     }
   ]
 }
