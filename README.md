@@ -80,6 +80,9 @@ with sixel graphics, such as iTerm2, foot and Windows Terminal 1.22 or
 newer, show a lower quality picture, and the rest, such as Alacritty and
 Terminal.app, show one made of block characters.
 
+On Windows, WezTerm can hang after you move a piece: the sound plays but
+the board stops updating. Run kess in Windows Terminal if that happens.
+
 ## Play
 
 Run `kess` and pick a game from the menu: play the bot, host an online game,
