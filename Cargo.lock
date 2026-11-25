@@ -775,9 +775,9 @@ dependencies = [
 
 [[package]]
 name = "katui"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d1e0365330d4f4c8a6c2becdd35070247d3ecb8d8834ea37b92ec42f53bb9fd"
+checksum = "fa45d93887cb17b9f41251bb7d14a1fd2c9e004408fc448222cf72834695eb67"
 dependencies = [
  "katui-app",
  "katui-draw",
@@ -793,9 +793,9 @@ dependencies = [
 
 [[package]]
 name = "katui-app"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "567d943db4fe5b4f1914fa86a90069481de44399cbf329c2c5a24d66771b7081"
+checksum = "3f45d92e59e3e7854039e594adb59fa143d1d932e2bd35dac4e15416ddcaa74d"
 dependencies = [
  "katui-draw",
  "katui-present",
@@ -808,9 +808,9 @@ dependencies = [
 
 [[package]]
 name = "katui-draw"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e6d379c2c954611d4e8439eae1e97129dae01fb061ffefbadcdd681fc71368a"
+checksum = "2ca143b0c2d04ff85c042daeeef709dc2f4b2cd69c8bdcff415e056994ee51cb"
 dependencies = [
  "cosmic-text",
  "katui-scene",
@@ -820,9 +820,9 @@ dependencies = [
 
 [[package]]
 name = "katui-game"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc58b67686a3871087c01f92be2cf39ca1af54ff26e4e3f5d1bc7ecc9ff96353"
+checksum = "d9cd837f32bf9de3ce4842c8f0a95d5b3878bc814dc6ac077f1200db4cd504b5"
 dependencies = [
  "katui-draw",
  "katui-present",
@@ -833,18 +833,18 @@ dependencies = [
 
 [[package]]
 name = "katui-layout"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4e8ee0eb14ccac5b226fd8300a39c363c306ffc6c5d813013de2782a5381529"
+checksum = "d062fb6fdb5a83ca4598cf6aa70db3b894205f28a543d9b1c465368c372c369f"
 dependencies = [
  "katui-scene",
 ]
 
 [[package]]
 name = "katui-present"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a5a5354f116c21ac29cd5ec2b7781fecaae91a9c2dd3c5fd1785c462749492b"
+checksum = "d46a3bfc74a34374f68e76840f760cda9dd60739d4bfb170546e2e37fbd0825f"
 dependencies = [
  "katui-proto",
  "katui-scene",
@@ -852,9 +852,9 @@ dependencies = [
 
 [[package]]
 name = "katui-proto"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1106126507d201a1b53439308555647ddddb7824fce90a0e438eebadb940f91b"
+checksum = "ba12dfeeb4ad482d8d8d9923ef97a121ca7f66c5e7d8236ce856caec6b17b2e4"
 dependencies = [
  "base64",
  "flate2",
@@ -863,9 +863,9 @@ dependencies = [
 
 [[package]]
 name = "katui-rt"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20a04476562dedfad3351282128f0cc5f1d5cc2680c12a20995f77d28dcc3184"
+checksum = "3248eba210bfaad0ad04aadcaf2da925962d155b60e9caab73cf3c595b1004f5"
 dependencies = [
  "crossterm_winapi",
  "katui-present",
@@ -879,9 +879,9 @@ dependencies = [
 
 [[package]]
 name = "katui-scene"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30f235b7592b971cc27e69eb48e841125fed1f1d5d749792f981351c42e76ebe"
+checksum = "9bb6a0b0a2b11eda6284f6ac2cbf15c719988777b013812641ad5c1e688c10a7"
 dependencies = [
  "unicode-segmentation",
  "unicode-width",
@@ -889,9 +889,9 @@ dependencies = [
 
 [[package]]
 name = "katui-ui"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f85a1c5d6b776d03266f8d89a1d2f23984c6ed38c81f9351d4dc812da9e839e6"
+checksum = "0374aabb582443c31a7b14db61c4ac487cd308494fa41e576bce3c7a7d32ada1"
 dependencies = [
  "katui-draw",
  "katui-proto",
@@ -901,9 +901,9 @@ dependencies = [
 
 [[package]]
 name = "katui-widgets"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "978f74a5415966339e169d4bbaa8f700cc3ebfb3e269399ab5b1f32e4742b11a"
+checksum = "d82d6d9a119bd295fe07df1ceda7c107cc92c4dfd6f629ca5d08044abd2e5b8c"
 dependencies = [
  "katui-draw",
  "katui-proto",

@@ -28,7 +28,7 @@ fontdue = "0.9"
 getrandom = "0.4"
 hkdf = "0.13"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
-katui = { version = "0.4.0", features = ["app", "game"] }
+katui = { version = "0.5.0", features = ["app", "game"] }
 rodio = { version = "0.23", default-features = false, features = ["playback"], optional = true }
 rumqttc = "0.25"
 serde = { version = "1", features = ["derive"] }
