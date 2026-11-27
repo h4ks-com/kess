@@ -9,7 +9,7 @@
   <a href="#play">Play</a> ·
   <a href="#features">Features</a> ·
   <a href="#keys">Keys</a> ·
-  <a href="#how-online-play-works">How online play works</a> ·
+  <a href="#online-multiplayer">Online multiplayer</a> ·
   <a href="#build">Build</a> ·
   <a href="https://chat.h4ks.com">IRC</a>
 </p>
@@ -46,7 +46,7 @@ scoop bucket add h4ks https://github.com/h4ks-com/scoop-bucket
 scoop install h4ks/kess
 ```
 
-Then run `kess` in WezTerm, which these lines install too.
+These commands install WezTerm too. Run `kess` in it.
 
 </details>
 
@@ -74,7 +74,7 @@ Prebuilt binaries are on the
 [releases page](https://github.com/h4ks-com/kess/releases). On Windows,
 unzip `kess-x86_64-pc-windows-msvc.zip` and run `kess.exe`.
 
-kess looks like the screenshots in kitty, Ghostty and a
+kess looks its best in kitty, Ghostty and a
 [WezTerm nightly](https://wezterm.org/installation.html) build. Terminals
 with sixel graphics, such as iTerm2, foot and Windows Terminal 1.22 or
 newer, show a lower quality picture, and the rest, such as Alacritty and
@@ -86,14 +86,13 @@ the board stops updating. Run kess in Windows Terminal if that happens.
 ## Play
 
 Run `kess` and pick a game from the menu: play the bot, host an online game,
-join one with a code, or "Two players", where two people take turns on one
-keyboard. Move between rows
-with the arrow keys, change a value with <kbd>←</kbd> <kbd>→</kbd>, and
+join one with a code, or pick "Two players" to play a friend on the same
+keyboard. Move between rows with the arrow keys, change a value with <kbd>←</kbd> <kbd>→</kbd>, and
 press <kbd>Enter</kbd> to start.
 
 <p align="center"><img src="docs/screenshots/menu.png" alt="The kess start menu with tabs for the mode, side, clock, piece set and sound" width="600"></p>
 
-Every menu choice also works as a command, to skip the menu:
+To skip the menu, start a game from the command line:
 
 ```
 kess bot black --clock 5+3    # play the bot as black, 5 minutes plus 3 seconds a move
@@ -127,7 +126,7 @@ its square. Tilt it back down or press <kbd>t</kbd> again for the 3D board.
 
 <p align="center"><img src="docs/screenshots/flat.jpg" alt="The amber set on a flat board seen from above, with a knight picked up and its moves lit green and red" width="700"></p>
 
-### Effects and sound for captures, check and checkmate
+### Captures, check and checkmate you can see and hear
 
 A capture breaks the taken piece into sparks with a shockwave across the
 board, check lights the king red, and checkmate ends the game with a banner
@@ -142,7 +141,7 @@ and amber knocks. Press <kbd>m</kbd> to mute.
 keys everywhere, in the menu and in a game, and <kbd>q</kbd> quits. You can
 play a whole game without touching the mouse.
 
-### Play online with a code
+### Play a friend online
 
 One player picks "Host a game" and gets a code like `7FQ2-K9XM-3TBW`. The
 other picks "Join a game" and types it in, and the game starts. After a
@@ -158,7 +157,7 @@ brings the game back. If the host quits, the game ends.
 | `Enter` or `Space` | pick up a piece, then put it down |
 | `Esc` or `Backspace` | put the piece back |
 | `r`, then `y` | resign |
-| `d` | offer a draw, or accept the one on the table |
+| `d` | offer or accept a draw |
 | `n` | ask for a rematch after a game |
 | `s` | switch between the amber, glass and metal sets |
 | `c` | put the camera back behind your side |
@@ -170,7 +169,7 @@ brings the game back. If the host quits, the game ends.
 When a pawn promotes, pick the piece with <kbd>←</kbd> <kbd>→</kbd> and
 press <kbd>Enter</kbd>.
 
-## How online play works
+## Online multiplayer
 
 The two players never connect to each other. Each one connects to two free
 public MQTT brokers ([HiveMQ] and [EMQX]) over TLS, and kess sends every
@@ -181,14 +180,13 @@ kess turns the code into a room name and an encryption key, and encrypts
 every message with ChaCha20-Poly1305. The brokers can't read or change the
 game, but anyone with the code can, so share it only with your opponent.
 
-Both players check every move on their own machine with the full rules of
-chess, and they check each other's clock times too. kess refuses a forged
-or illegal move.
+Each player's kess checks every move and clock time with the full rules of
+chess, and rejects forged or illegal moves.
 
 The game ends on checkmate, stalemate, insufficient material, resignation,
 a timeout or an agreed draw. It also ends by itself on fivefold repetition
-and the 75-move rule. kess has no claim for threefold repetition or the
-50-move rule, so offer a draw with `d` in those positions.
+and the 75-move rule. You can't claim a draw by threefold repetition or
+the 50-move rule, so offer one with `d` instead.
 
 [HiveMQ]: https://www.hivemq.com/mqtt/public-mqtt-broker/
 [EMQX]: https://www.emqx.com/en/mqtt/public-mqtt5-broker
